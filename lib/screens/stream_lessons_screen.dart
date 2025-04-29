@@ -3,8 +3,9 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:najih_education_app/services/auth_state.dart';
 import 'package:najih_education_app/services/general_service.dart';
-import 'package:najih_education_app/services/auth_state.dart'; //  add this helper
+import 'package:najih_education_app/dialogs/bill_uploader_dialog.dart';
 
 class StreamLessonsScreen extends StatefulWidget {
   final String subjectId;
@@ -24,113 +25,132 @@ class StreamLessonsScreen extends StatefulWidget {
 
 class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
   final GeneralService _gs = GeneralService();
+
   bool loading = true;
+  bool purchaseLoading = false; // ⬅ button spinner
+  bool purchaseDone = false; // ⬅ disable after success
 
   late String _lang = widget.lang;
   Map<String, dynamic>? item; // {subject, teacher, lessons}
-
-  bool enrollEnabled = true;
   List<String> selected = [];
-
-  // file picked by user
-  File? billFile;
+  bool enrollEnabled = true;
 
   @override
   void initState() {
     super.initState();
-    fetch();
+    _fetch();
   }
 
-  Future<void> fetch() async {
+  Future<void> _fetch() async {
     try {
-      final data = await _gs.getItem('t_lessons/getLessonsForWeb',
-          "${widget.subjectId}/${widget.teacherId}");
+      final data = await _gs.getItem(
+        't_lessons/getLessonsForWeb',
+        "${widget.subjectId}/${widget.teacherId}",
+      );
       setState(() {
         item = data;
         loading = false;
       });
     } catch (e) {
-      debugPrint('Error fetching stream lessons: $e');
+      debugPrint('Error: $e');
       setState(() => loading = false);
     }
   }
 
-  // ───── helpers ─────
-  void toggle(String id) => setState(
-      () => selected.contains(id) ? selected.remove(id) : selected.add(id));
+  // ────────── pick bill helper ──────────
+  Future<File?> _pickBillDialog() async {
+    File? picked;
+    await showDialog(
+      context: context,
+      builder: (_) => _UploadBillDialog(
+        onPicked: (f) => picked = f,
+        lang: _lang,
+      ),
+    );
+    return picked;
+  }
 
-  void enroll() => setState(() => enrollEnabled = false);
+  // ────────── purchase flow ──────────
+  Future<void> _purchase() async {
+    if (purchaseLoading || purchaseDone) return;
 
-  // main purchase flow
-  Future<void> purchaseFlow() async {
     final auth = AuthState();
     if (!auth.isLoggedIn) {
-      // push your login route
       Navigator.pushNamed(context, '/login');
       return;
     }
 
-    // 1) ask for bill
-    billFile = await _pickBill(context);
-    if (billFile == null) return; // user cancelled
-
-    // 2) compose payload
-    final subj = item!['subject'];
-    final teacher = item!['teacher'];
-
-    final formData = {
-      "source": "teachersLessonsIds",
-      "purchasedLessons": {widget.subjectId: selected},
-      "subjectId": widget.subjectId,
-      "teacherId": widget.teacherId,
-      "userId": auth.user!['_id'],
-      "status": "in progress",
-      "teachersLessonsIds": selected,
-      "teachersLessons": _fullSelectedLessons(),
-      "userName": auth.user!['name'],
-      "userEmail": auth.user!['username'],
-      "price": 0,
-      "lessonsPrice": subj['lessonPrice'],
-      "subjectName": subj['name']['ar'],
-      "subjectClass": "${subj['level']['ar']} ${subj['class']}",
-      "bill": base64Encode(await billFile!.readAsBytes()),
-    };
-
-    await _gs.addItem('studentsLessons', formData);
-
-    if (mounted) {
-      await showDialog(
-        context: context,
-        builder: (_) => const _SuccessDialog(),
-      );
-      // reset
-      setState(() {
-        enrollEnabled = true;
-        selected.clear();
-        billFile = null;
-      });
-    }
-  }
-
-  // pick image with file_picker
-  Future<File?> _pickBill(BuildContext ctx) async {
-    final res = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      withData: true,
+    final Map<String, dynamic>? billJson = await showDialog(
+      context: context,
+      builder: (_) => BillUploaderDialog(lang: _lang),
     );
-    if (res != null && res.files.isNotEmpty) {
-      return File(res.files.single.path!);
+    if (billJson == null) return; // user cancelled
+
+    if (billJson == null) return; // user cancelled
+
+    setState(() => purchaseLoading = true);
+
+    try {
+      final subj = item!['subject'];
+      final teacher = item!['teacher'];
+
+      final payload = {
+        "source": "teachersLessonsIds",
+        "purchasedLessons": {widget.subjectId: selected},
+        "subjectId": widget.subjectId,
+        "teacherId": widget.teacherId,
+        "userId": auth.user!['_id'],
+        "status": "in progress",
+        "teachersLessonsIds": selected,
+        "teachersLessons": _fullSelectedLessons(),
+        "userName": auth.user!['name'],
+        "userEmail": auth.user!['username'],
+        "price": 0,
+        "lessonsPrice": subj['lessonPrice'],
+        "subjectName": subj['name']['ar'],
+        "subjectClass": "${subj['level']['ar']} ${subj['class']}",
+        "bill": billJson,
+      };
+
+      await _gs.addItem('studentsLessons', payload);
+
+      if (mounted) {
+        await showDialog(
+          context: context,
+          builder: (_) => const _SuccessDialog(),
+        );
+        setState(() {
+          purchaseDone = true;
+          enrollEnabled = true;
+          selected.clear();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(_lang == 'en' ? 'Upload failed' : 'فشل الرفع')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => purchaseLoading = false);
     }
-    return null;
   }
 
-  // helper to return full lesson objects
+  // map of lessons objects for backend
   List<dynamic> _fullSelectedLessons() {
     final lessons = item!['lessons'] as List<dynamic>;
     return lessons.where((e) => selected.contains(e['_id'])).toList();
   }
 
-  // ───── UI ─────
+// toggle selection on/off for a lesson id
+  void toggle(String id) {
+    setState(() {
+      selected.contains(id) ? selected.remove(id) : selected.add(id);
+    });
+  }
+
+  // ────────── UI ──────────
   @override
   Widget build(BuildContext context) {
     if (loading) {
@@ -201,18 +221,29 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
                       const SizedBox(height: 12),
                       enrollEnabled
                           ? ElevatedButton(
-                              onPressed: enroll,
+                              onPressed: () =>
+                                  setState(() => enrollEnabled = false),
                               child: Text(
                                   _lang == 'en' ? 'Enroll now' : 'سجل الآن'),
                             )
                           : ElevatedButton(
-                              onPressed:
-                                  selected.isNotEmpty ? purchaseFlow : null,
+                              onPressed: selected.isNotEmpty ? _purchase : null,
                               style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xff588157)),
-                              child: Text(_lang == 'en'
-                                  ? 'Purchase selected'
-                                  : 'اشتر الدروس'),
+                              child: purchaseLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2, color: Colors.white),
+                                    )
+                                  : Text(_lang == 'en'
+                                      ? (purchaseDone
+                                          ? 'Done'
+                                          : 'Purchase selected')
+                                      : (purchaseDone
+                                          ? 'تم الإرسال'
+                                          : 'اشتر الدروس')),
                             ),
                     ],
                   ),
@@ -230,7 +261,7 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
                   final sel = selected.contains(l['_id']);
                   return GestureDetector(
                     onTap: () {
-                      if (!enrollEnabled) toggle(l['_id']);
+                      if (!enrollEnabled && !purchaseDone) toggle(l['_id']);
                     },
                     child: Container(
                       margin: const EdgeInsets.only(bottom: 12),
@@ -263,7 +294,7 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
                     ),
                   );
                 },
-              )
+              ),
             ],
           ),
         ),
@@ -272,7 +303,65 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
   }
 }
 
-// ───── simple success dialog ─────
+//////////////////////////////////////////////////////////////////////////////
+/// Dialog widgets
+//////////////////////////////////////////////////////////////////////////////
+class _UploadBillDialog extends StatefulWidget {
+  final void Function(File) onPicked;
+  final String lang;
+  const _UploadBillDialog({required this.onPicked, required this.lang});
+
+  @override
+  State<_UploadBillDialog> createState() => _UploadBillDialogState();
+}
+
+class _UploadBillDialogState extends State<_UploadBillDialog> {
+  File? bill;
+
+  Future<void> _pick() async {
+    final res = await FilePicker.platform
+        .pickFiles(type: FileType.image, withData: true);
+    if (res != null && res.files.isNotEmpty) {
+      setState(() => bill = File(res.files.single.path!));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.lang == 'en' ? 'Upload bill' : 'ارفع الفاتورة'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          bill == null
+              ? const Icon(Icons.receipt_long, size: 64, color: Colors.grey)
+              : Image.file(bill!, height: 120),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: _pick,
+            icon: const Icon(Icons.upload),
+            label: Text(widget.lang == 'en' ? 'Choose image' : 'اختَر صورة'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(widget.lang == 'en' ? 'Cancel' : 'إلغاء')),
+        ElevatedButton(
+          onPressed: bill != null
+              ? () {
+                  widget.onPicked(bill!);
+                  Navigator.pop(context);
+                }
+              : null,
+          child: const Text('OK'),
+        ),
+      ],
+    );
+  }
+}
+
 class _SuccessDialog extends StatelessWidget {
   const _SuccessDialog();
 
