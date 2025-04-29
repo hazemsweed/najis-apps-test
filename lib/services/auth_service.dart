@@ -1,51 +1,48 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'auth_state.dart';
 
 class AuthService {
   final _storage = const FlutterSecureStorage();
-  final String _baseUrl = "http://localhost:1022/users";
+  final String _baseUrl = "https://nserver.najih1.com/users";
 
   Future<Map<String, dynamic>> login(String username, String password) async {
     final url = Uri.parse("$_baseUrl/login");
-    final response = await http.post(
+    final res = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': username, 'password': password}),
     );
 
-    final body = jsonDecode(response.body);
-    if (response.statusCode == 200 && body['success'] == true) {
-      final token = body['accessToken'];
-      await _storage.write(key: 'token', value: token);
-      return {'success': true, 'user': body['user']};
+    final body = jsonDecode(res.body);
+    if (res.statusCode == 200 && body['success'] == true) {
+      // persist token + update global state
+      await _storage.write(key: 'token', value: body['accessToken']);
+      AuthState().setUser(body['user']);
+      return {'success': true};
     } else {
-      return {'success': false, 'message': body['err'].toString()};
+      return {'success': false, 'message': body['err'] ?? 'Login failed'};
     }
   }
 
   Future<void> logout() async {
     await _storage.delete(key: 'token');
+    AuthState().logout();
   }
 
-  Future<String?> getToken() async {
-    return await _storage.read(key: 'token');
-  }
-
-  Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
+  Future<Map<String, dynamic>> register(Map<String, dynamic> user) async {
     final url = Uri.parse("$_baseUrl/signup");
-
-    final response = await http.post(
+    final res = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(userData),
+      body: jsonEncode(user),
     );
-
-    final body = jsonDecode(response.body);
-    if (response.statusCode == 200 && body['success'] == true) {
-      return {'success': true, 'userId': body['userId']};
+    final body = jsonDecode(res.body);
+    if (res.statusCode == 200 && body['success'] == true) {
+      return {'success': true};
     } else {
-      return {'success': false, 'message': body['err'].toString()};
+      return {'success': false, 'message': body['err'] ?? 'Signup failed'};
     }
   }
 }

@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:najih_education_app/screens/register_screen.dart';
-import 'package:najih_education_app/services/auth_state.dart';
-import '../services/auth_service.dart';
-
-final AuthService _authService = AuthService();
+import 'package:najih_education_app/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,34 +11,27 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false;
-  bool _obscureText = true;
+  final _username = TextEditingController();
+  final _password = TextEditingController();
+  bool loading = false;
+  bool obscure = true;
 
-  void _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+  final _auth = AuthService();
 
-      final result = await _authService.login(
-        _usernameController.text.trim(),
-        _passwordController.text.trim(),
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => loading = true);
+
+    final res = await _auth.login(_username.text.trim(), _password.text.trim());
+
+    setState(() => loading = false);
+
+    if (res['success']) {
+      Navigator.pop(context); // go back to MainLayout
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['message'] ?? 'Login failed')),
       );
-
-      setState(() => _isLoading = false);
-
-      if (result['success']) {
-        // Navigate to home screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Login successful!")),
-        );
-        AuthState().setUser(result['user']);
-        // TODO: Navigator.push to home screen
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Login failed: ${result['message']}")),
-        );
-      }
     }
   }
 
@@ -50,74 +40,49 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text("Najih Login")),
       body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Center(
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-                const Text(
-                  "Welcome to Najih Education",
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 30),
-
-                // Username
-                TextFormField(
-                  controller: _usernameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email or Username',
-                    border: OutlineInputBorder(),
+        padding: const EdgeInsets.all(20),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              const SizedBox(height: 30),
+              TextFormField(
+                controller: _username,
+                decoration: const InputDecoration(
+                    labelText: 'Email', border: OutlineInputBorder()),
+                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _password,
+                obscureText: obscure,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon:
+                        Icon(obscure ? Icons.visibility_off : Icons.visibility),
+                    onPressed: () => setState(() => obscure = !obscure),
                   ),
-                  validator: (value) =>
-                      value == null || value.isEmpty ? 'Required' : null,
                 ),
-                const SizedBox(height: 20),
-
-                // Password
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscureText,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    border: const OutlineInputBorder(),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureText ? Icons.visibility_off : Icons.visibility,
-                      ),
-                      onPressed: () =>
-                          setState(() => _obscureText = !_obscureText),
-                    ),
-                  ),
-                  validator: (value) =>
-                      value == null || value.isEmpty ? 'Required' : null,
+                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: loading ? null : _login,
+                child: loading
+                    ? const CircularProgressIndicator()
+                    : const Text("Login"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RegisterScreen()),
                 ),
-                const SizedBox(height: 30),
-
-                // Login Button
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _login,
-                  child: _isLoading
-                      ? const CircularProgressIndicator()
-                      : const Text("Login"),
-                ),
-
-                const SizedBox(height: 10),
-
-                // Go to Register
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                    );
-                  },
-                  child: const Text("Don't have an account? Sign up"),
-                ),
-              ],
-            ),
+                child: const Text("Don't have an account? Sign up"),
+              ),
+            ],
           ),
         ),
       ),
