@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:najih_education_app/screens/recorded_lessons_screen.dart';
 import 'package:najih_education_app/services/general_service.dart';
+import 'package:najih_education_app/screens/stream_teachers_screen.dart';
 
 typedef PageBuilder = Widget Function(String lang);
 
@@ -148,10 +149,18 @@ class _MiddleSchoolScreenState extends State<MiddleSchoolScreen> {
                 ),
                 title: Text(subject["name"][widget.lang] ?? "",
                     style: const TextStyle(fontWeight: FontWeight.w600)),
-                onTap: () => widget.openPage(
-                  (l) =>
-                      RecordedLessonsScreen(subjectId: subject["_id"], lang: l),
-                ),
+                onTap: () {
+                  widget.openPage(
+                    (l) => widget.lessonType.toLowerCase() == 'recorded'
+                        ? RecordedLessonsScreen(
+                            subjectId: subject["_id"], lang: l)
+                        : StreamTeachersScreen(
+                            subjectId: subject["_id"],
+                            lang: l,
+                            openPage: widget.openPage,
+                          ),
+                  );
+                },
               )),
         ],
       ),
