@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:najih_education_app/screens/register_screen.dart';
+import 'package:najih_education_app/services/auth_state.dart';
 import '../services/auth_service.dart';
 
 final AuthService _authService = AuthService();
@@ -34,6 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Login successful!")),
         );
+        AuthState().setUser(result['user']);
         // TODO: Navigator.push to home screen
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

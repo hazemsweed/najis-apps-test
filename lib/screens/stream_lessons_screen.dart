@@ -1,5 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:najih_education_app/services/general_service.dart';
+import 'package:najih_education_app/services/auth_state.dart'; //  add this helper
 
 class StreamLessonsScreen extends StatefulWidget {
   final String subjectId;
@@ -27,6 +32,9 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
   bool enrollEnabled = true;
   List<String> selected = [];
 
+  // file picked by user
+  File? billFile;
+
   @override
   void initState() {
     super.initState();
@@ -53,22 +61,89 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
 
   void enroll() => setState(() => enrollEnabled = false);
 
-  void purchase() => ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(
-          _lang == 'en' ? 'Pretend purchase complete!' : 'تم الشراء (وهمي)!')));
+  // main purchase flow
+  Future<void> purchaseFlow() async {
+    final auth = AuthState();
+    if (!auth.isLoggedIn) {
+      // push your login route
+      Navigator.pushNamed(context, '/login');
+      return;
+    }
+
+    // 1) ask for bill
+    billFile = await _pickBill(context);
+    if (billFile == null) return; // user cancelled
+
+    // 2) compose payload
+    final subj = item!['subject'];
+    final teacher = item!['teacher'];
+
+    final formData = {
+      "source": "teachersLessonsIds",
+      "purchasedLessons": {widget.subjectId: selected},
+      "subjectId": widget.subjectId,
+      "teacherId": widget.teacherId,
+      "userId": auth.user!['_id'],
+      "status": "in progress",
+      "teachersLessonsIds": selected,
+      "teachersLessons": _fullSelectedLessons(),
+      "userName": auth.user!['name'],
+      "userEmail": auth.user!['username'],
+      "price": 0,
+      "lessonsPrice": subj['lessonPrice'],
+      "subjectName": subj['name']['ar'],
+      "subjectClass": "${subj['level']['ar']} ${subj['class']}",
+      "bill": base64Encode(await billFile!.readAsBytes()),
+    };
+
+    await _gs.addItem('studentsLessons', formData);
+
+    if (mounted) {
+      await showDialog(
+        context: context,
+        builder: (_) => const _SuccessDialog(),
+      );
+      // reset
+      setState(() {
+        enrollEnabled = true;
+        selected.clear();
+        billFile = null;
+      });
+    }
+  }
+
+  // pick image with file_picker
+  Future<File?> _pickBill(BuildContext ctx) async {
+    final res = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    if (res != null && res.files.isNotEmpty) {
+      return File(res.files.single.path!);
+    }
+    return null;
+  }
+
+  // helper to return full lesson objects
+  List<dynamic> _fullSelectedLessons() {
+    final lessons = item!['lessons'] as List<dynamic>;
+    return lessons.where((e) => selected.contains(e['_id'])).toList();
+  }
 
   // ───── UI ─────
   @override
   Widget build(BuildContext context) {
     if (loading) {
       return const Scaffold(
-          body: Center(
-              child: CircularProgressIndicator(color: Color(0xff143290))));
+        body:
+            Center(child: CircularProgressIndicator(color: Color(0xff143290))),
+      );
     }
     if (item == null) {
       return Scaffold(
-          body: Center(
-              child: Text(_lang == 'en' ? 'Error' : 'حدث خطأ في التحميل')));
+        body:
+            Center(child: Text(_lang == 'en' ? 'Error' : 'حدث خطأ في التحميل')),
+      );
     }
 
     final lessons = item!['lessons'] as List<dynamic>;
@@ -131,7 +206,8 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
                                   _lang == 'en' ? 'Enroll now' : 'سجل الآن'),
                             )
                           : ElevatedButton(
-                              onPressed: selected.isNotEmpty ? purchase : null,
+                              onPressed:
+                                  selected.isNotEmpty ? purchaseFlow : null,
                               style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xff588157)),
                               child: Text(_lang == 'en'
@@ -192,6 +268,23 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ───── simple success dialog ─────
+class _SuccessDialog extends StatelessWidget {
+  const _SuccessDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Success 🎉'),
+      content: const Text('Your purchase request was sent successfully.'),
+      actions: [
+        ElevatedButton(
+            onPressed: () => Navigator.pop(context), child: const Text('OK'))
+      ],
     );
   }
 }
