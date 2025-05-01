@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:najih_education_app/screens/login_screen.dart';
-import 'package:najih_education_app/screens/main_layout.dart';
 import 'package:najih_education_app/screens/register_screen.dart';
-import 'package:najih_education_app/services/auth_service.dart';
 
 import 'screens/splash_screen.dart';
 
