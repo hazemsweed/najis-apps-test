@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:najih_education_app/screens/my_lessons_screen.dart';
-import '../widgets/home_page_content.dart';
 import 'package:najih_education_app/services/auth_state.dart';
 import 'package:najih_education_app/services/auth_service.dart';
+import '../widgets/home_page_content.dart';
 
-/// A function that builds a page for the current language
 typedef PageBuilder = Widget Function(String lang);
 
 class MainLayout extends StatefulWidget {
@@ -15,51 +15,33 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> {
-  // language & navbar
   int _currentIndex = 0;
   String _lang = 'en';
-
-  // holds a “recipe” for the current custom page
   PageBuilder? _customPageBuilder;
 
-  // ────────────────────── lifecycle ──────────────────────
-  @override
-  void initState() {
-    super.initState();
-    AuthState().addListener(_authChanged); // rebuild when auth changes
-  }
-
-  void _authChanged() => setState(() {});
-
-  @override
-  void dispose() {
-    AuthState().removeListener(_authChanged);
-    super.dispose();
-  }
-
-  // ────────────────────── helpers ──────────────────────
   void _toggleLanguage() => setState(() => _lang = _lang == 'en' ? 'ar' : 'en');
-
   void _openCustomPage(PageBuilder builder) =>
       setState(() => _customPageBuilder = builder);
-
   void _goBackToMain() => setState(() => _customPageBuilder = null);
 
-  bool get _loggedIn => AuthState().isLoggedIn;
-  String get _userName => AuthState().user?['name'] ?? '';
-
-  // ────────────────────── build ──────────────────────
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthState>();
+    final loggedIn = auth.isLoggedIn;
+    final userName = auth.user?['name'] ?? '';
+
     final pages = [
       HomePageContent(lang: _lang, openPage: _openCustomPage),
-      Center(child: MyLessonsScreen(lang: _lang)),
-      const Center(child: Text("My Exams")),
-      const Center(child: Text("Profile")),
+      loggedIn ? MyLessonsScreen(lang: _lang) : _requireLogin("My Lessons"),
+      loggedIn
+          ? const Center(child: Text("My Exams"))
+          : _requireLogin("My Exams"),
+      loggedIn
+          ? const Center(child: Text("Profile"))
+          : _requireLogin("Profile"),
     ];
 
     return Scaffold(
-      // ────── AppBar ──────
       appBar: AppBar(
         leading: _customPageBuilder != null
             ? IconButton(
@@ -74,11 +56,11 @@ class _MainLayoutState extends State<MainLayout> {
             onPressed: _toggleLanguage,
             tooltip: _lang == 'en' ? 'عربي' : 'English',
           ),
-          if (_loggedIn)
+          if (loggedIn)
             IconButton(
               icon: const Icon(Icons.logout),
               tooltip: _lang == 'en' ? "Logout" : "تسجيل الخروج",
-              onPressed: () async => await AuthService().logout(),
+              onPressed: () async => await AuthService().logout(context),
             )
           else
             IconButton(
@@ -88,26 +70,21 @@ class _MainLayoutState extends State<MainLayout> {
             ),
         ],
       ),
-
-      // ────── Body ──────
       body: Column(
         children: [
-          if (_loggedIn)
+          if (loggedIn)
             Container(
               width: double.infinity,
               color: Colors.blue.shade50,
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-              child: Text(_lang == 'en'
-                  ? "Welcome, $_userName!"
-                  : "مرحبًا، $_userName!"),
+              child: Text(
+                  _lang == 'en' ? "Welcome, $userName!" : "مرحبًا، $userName!"),
             ),
           Expanded(
             child: _customPageBuilder?.call(_lang) ?? pages[_currentIndex],
           ),
         ],
       ),
-
-      // ────── Bottom Nav (hidden on custom page) ──────
       bottomNavigationBar: _customPageBuilder == null
           ? BottomNavigationBar(
               currentIndex: _currentIndex,
@@ -116,20 +93,42 @@ class _MainLayoutState extends State<MainLayout> {
               onTap: (i) => setState(() => _currentIndex = i),
               items: [
                 BottomNavigationBarItem(
-                    icon: const Icon(Icons.home),
-                    label: _lang == 'en' ? "Home" : "الرئيسية"),
+                  icon: const Icon(Icons.home),
+                  label: _lang == 'en' ? "Home" : "الرئيسية",
+                ),
                 BottomNavigationBarItem(
-                    icon: const Icon(Icons.play_circle),
-                    label: _lang == 'en' ? "My Lessons" : "دروسي"),
+                  icon: const Icon(Icons.play_circle),
+                  label: _lang == 'en' ? "My Lessons" : "دروسي",
+                ),
                 BottomNavigationBarItem(
-                    icon: const Icon(Icons.assignment),
-                    label: _lang == 'en' ? "My Exams" : "امتحاناتي"),
+                  icon: const Icon(Icons.assignment),
+                  label: _lang == 'en' ? "My Exams" : "امتحاناتي",
+                ),
                 BottomNavigationBarItem(
-                    icon: const Icon(Icons.person),
-                    label: _lang == 'en' ? "Profile" : "الملف الشخصي"),
+                  icon: const Icon(Icons.person),
+                  label: _lang == 'en' ? "Profile" : "الملف الشخصي",
+                ),
               ],
             )
           : null,
+    );
+  }
+
+  Widget _requireLogin(String pageName) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(_lang == 'en'
+              ? "$pageName requires login"
+              : "صفحة $pageName تتطلب تسجيل الدخول"),
+          const SizedBox(height: 10),
+          ElevatedButton(
+            onPressed: () => Navigator.pushNamed(context, '/login'),
+            child: Text(_lang == 'en' ? "Login" : "تسجيل الدخول"),
+          ),
+        ],
+      ),
     );
   }
 }

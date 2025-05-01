@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:najih_education_app/screens/main_layout.dart';
 import 'package:najih_education_app/services/auth_service.dart';
+import 'package:provider/provider.dart';
+import 'package:najih_education_app/services/auth_state.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -22,9 +24,15 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _checkAuth() async {
     final token = await _storage.read(key: 'token');
     if (token != null) {
-      await AuthService().checkToken(token);
+      await AuthService().checkToken(context, token);
+    } else {
+      Provider.of<AuthState>(context, listen: false).setSession(
+        user: null,
+        token: null,
+        expiry: null,
+      );
     }
-    // Always navigate to MainLayout
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const MainLayout()),

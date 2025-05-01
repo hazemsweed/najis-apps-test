@@ -1,81 +1,84 @@
 import 'dart:convert';
+import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
+import 'auth_state.dart';
 
 class GeneralService {
   static const String baseUrl = 'https://nserver.najih1.com/';
 
-  // Fetch all items without query
-  Future<List<dynamic>> getItems(String route) async {
-    final response = await http.get(Uri.parse(baseUrl + route));
+  static late BuildContext globalContext;
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load data: ${response.reasonPhrase}');
-    }
+  static void init(BuildContext context) {
+    globalContext = context;
   }
 
-  // Fetch items with query parameters
+  Map<String, String> get _headers {
+    final token = Provider.of<AuthState>(globalContext, listen: false).token;
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  // ───────────────── Fetch all items
+  Future<List<dynamic>> getItems(String route) async {
+    final response =
+        await http.get(Uri.parse(baseUrl + route), headers: _headers);
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    throw Exception('Failed to load data: ${response.reasonPhrase}');
+  }
+
+  // ───────────────── Fetch items with query
   Future<List<dynamic>> getItemsWithQuery(
       String route, Map<String, String> queryParams) async {
     final uri =
         Uri.parse(baseUrl + route).replace(queryParameters: queryParams);
-    final response = await http.get(uri);
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load data: ${response.reasonPhrase}');
-    }
+    final response = await http.get(uri, headers: _headers);
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    throw Exception('Failed to load data: ${response.reasonPhrase}');
   }
 
-  // Fetch single item
+  // ───────────────── Fetch single item
   Future<Map<String, dynamic>> getItem(String route, String id) async {
-    final response = await http.get(Uri.parse('$baseUrl$route/$id'));
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load item: ${response.reasonPhrase}');
-    }
+    final response =
+        await http.get(Uri.parse('$baseUrl$route/$id'), headers: _headers);
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    throw Exception('Failed to load item: ${response.reasonPhrase}');
   }
 
-  // Add item
+  // ───────────────── Add item
   Future<Map<String, dynamic>> addItem(
       String route, Map<String, dynamic> data) async {
     final response = await http.post(
       Uri.parse(baseUrl + route),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode(data),
     );
-
     if (response.statusCode == 200 || response.statusCode == 201) {
       return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to add item: ${response.reasonPhrase}');
     }
+    throw Exception('Failed to add item: ${response.reasonPhrase}');
   }
 
-  // Edit item
+  // ───────────────── Edit item
   Future<Map<String, dynamic>> editItem(
       String route, String id, Map<String, dynamic> data) async {
     final response = await http.put(
       Uri.parse('$baseUrl$route/$id'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode(data),
     );
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to edit item: ${response.reasonPhrase}');
-    }
+    if (response.statusCode == 200) return jsonDecode(response.body);
+    throw Exception('Failed to edit item: ${response.reasonPhrase}');
   }
 
-  // Delete item
+  // ───────────────── Delete item
   Future<void> deleteItem(String route, String id) async {
-    final response = await http.delete(Uri.parse('$baseUrl$route/$id'));
-
+    final response = await http.delete(
+      Uri.parse('$baseUrl$route/$id'),
+      headers: _headers,
+    );
     if (response.statusCode != 200) {
       throw Exception('Failed to delete item: ${response.reasonPhrase}');
     }

@@ -17,12 +17,12 @@ class _LoginScreenState extends State<LoginScreen> {
   bool obscure = true;
 
   final _auth = AuthService();
-
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => loading = true);
 
-    final res = await _auth.login(_username.text.trim(), _password.text.trim());
+    final res = await _auth.login(
+        context, _username.text.trim(), _password.text.trim());
 
     setState(() => loading = false);
 

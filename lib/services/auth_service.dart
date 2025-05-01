@@ -1,13 +1,16 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'auth_state.dart';
 
 class AuthService {
   final _storage = const FlutterSecureStorage();
   final String _baseUrl = "https://nserver.najih1.com/users";
 
-  Future<Map<String, dynamic>> login(String username, String password) async {
+  Future<Map<String, dynamic>> login(
+      BuildContext context, String username, String password) async {
     final url = Uri.parse("$_baseUrl/login");
     final res = await http.post(
       url,
@@ -18,19 +21,24 @@ class AuthService {
     final body = jsonDecode(res.body);
     if (res.statusCode == 200 && body['success'] == true) {
       await _storage.write(key: 'token', value: body['accessToken']);
-      AuthState().setUser(body['user']);
+
+      Provider.of<AuthState>(context, listen: false).setSession(
+        user: body['user'],
+        token: body['accessToken'],
+        expiry: DateTime.now().add(const Duration(hours: 24)),
+      );
       return {'success': true};
     } else {
       return {'success': false, 'message': body['err'] ?? 'Login failed'};
     }
   }
 
-  Future<void> logout() async {
+  Future<void> logout(BuildContext context) async {
     await _storage.delete(key: 'token');
-    AuthState().logout();
+    Provider.of<AuthState>(context, listen: false).logout();
   }
 
-  Future<bool> checkToken(String token) async {
+  Future<bool> checkToken(BuildContext context, String token) async {
     final url = Uri.parse("$_baseUrl/check/JWT");
     final res = await http.get(url, headers: {
       'Content-Type': 'application/json',
@@ -41,19 +49,15 @@ class AuthService {
       final body = jsonDecode(res.body);
       if (body['accessToken'] != null) {
         await _storage.write(key: 'token', value: body['accessToken']);
-
-        final expiry = DateTime.now().add(const Duration(hours: 24));
-
-        AuthState().setSession(
+        Provider.of<AuthState>(context, listen: false).setSession(
           user: body['user'],
           token: body['accessToken'],
-          expiry: expiry,
+          expiry: DateTime.now().add(const Duration(hours: 24)),
         );
         return true;
       }
     }
 
-    // 👇 Don't logout or navigate. Just return false silently.
     return false;
   }
 

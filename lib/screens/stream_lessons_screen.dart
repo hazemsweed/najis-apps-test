@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -6,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:najih_education_app/services/auth_state.dart';
 import 'package:najih_education_app/services/general_service.dart';
 import 'package:najih_education_app/dialogs/bill_uploader_dialog.dart';
+import 'package:provider/provider.dart';
 
 class StreamLessonsScreen extends StatefulWidget {
   final String subjectId;
@@ -74,9 +74,13 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
   Future<void> _purchase() async {
     if (purchaseLoading || purchaseDone) return;
 
-    final auth = AuthState();
-    if (!auth.isLoggedIn) {
-      Navigator.pushNamed(context, '/login');
+    final auth = Provider.of<AuthState>(context, listen: false);
+    final user = auth.user;
+
+    if (user == null || !auth.isLoggedIn || auth.isTokenExpired) {
+      if (mounted) {
+        Navigator.pushNamed(context, '/login');
+      }
       return;
     }
 
@@ -84,9 +88,7 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
       context: context,
       builder: (_) => BillUploaderDialog(lang: _lang),
     );
-    if (billJson == null) return; // user cancelled
-
-    if (billJson == null) return; // user cancelled
+    if (billJson == null) return;
 
     setState(() => purchaseLoading = true);
 
@@ -99,12 +101,12 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
         "purchasedLessons": {widget.subjectId: selected},
         "subjectId": widget.subjectId,
         "teacherId": widget.teacherId,
-        "userId": auth.user!['_id'],
+        "userId": user['_id'],
         "status": "in progress",
         "teachersLessonsIds": selected,
         "teachersLessons": _fullSelectedLessons(),
-        "userName": auth.user!['name'],
-        "userEmail": auth.user!['username'],
+        "userName": user['name'],
+        "userEmail": user['username'],
         "price": 0,
         "lessonsPrice": subj['lessonPrice'],
         "subjectName": subj['name']['ar'],
@@ -126,6 +128,7 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
         });
       }
     } catch (e) {
+      debugPrint('AddItem error: $e'); // 👈 add this
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
