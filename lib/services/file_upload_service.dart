@@ -1,16 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:najih_education_app/constants/api_config.dart';
 
 class FileUploadService {
-  // static const String _defaultBase = 'http://localhost:1022/';
-  static const String _defaultBase = 'https://nserver.najih1.com/';
-
   final Dio _dio;
 
   FileUploadService({String? baseUrl})
       : _dio = Dio(BaseOptions(
-          baseUrl: baseUrl ?? _defaultBase,
+          baseUrl: ApiConfig.baseUrl,
           headers: {'Content-Type': 'multipart/form-data'},
         ));
 

@@ -1,13 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/widgets.dart';
+import 'package:najih_education_app/constants/api_config.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'auth_state.dart';
 
 class GeneralService {
-  // static const String baseUrl = 'http://localhost:1022/';
-  static const String baseUrl = 'https://nserver.najih1.com/';
-
   static late BuildContext globalContext;
 
   static void init(BuildContext context) {
@@ -25,7 +23,7 @@ class GeneralService {
   // ───────────────── Fetch all items
   Future<List<dynamic>> getItems(String route) async {
     final response =
-        await http.get(Uri.parse(baseUrl + route), headers: _headers);
+        await http.get(Uri.parse(ApiConfig.baseUrl + route), headers: _headers);
     if (response.statusCode == 200) return jsonDecode(response.body);
     throw Exception('Failed to load data: ${response.reasonPhrase}');
   }
@@ -33,8 +31,8 @@ class GeneralService {
   // ───────────────── Fetch items with query
   Future<List<dynamic>> getItemsWithQuery(
       String route, Map<String, String> queryParams) async {
-    final uri =
-        Uri.parse(baseUrl + route).replace(queryParameters: queryParams);
+    final uri = Uri.parse(ApiConfig.baseUrl + route)
+        .replace(queryParameters: queryParams);
     final response = await http.get(uri, headers: _headers);
     if (response.statusCode == 200) return jsonDecode(response.body);
     throw Exception('Failed to load data: ${response.reasonPhrase}');
@@ -42,8 +40,8 @@ class GeneralService {
 
   // ───────────────── Fetch single item
   Future<Map<String, dynamic>> getItem(String route, String id) async {
-    final response =
-        await http.get(Uri.parse('$baseUrl$route/$id'), headers: _headers);
+    final response = await http.get(Uri.parse('${ApiConfig.baseUrl}$route/$id'),
+        headers: _headers);
     if (response.statusCode == 200) return jsonDecode(response.body);
     throw Exception('Failed to load item: ${response.reasonPhrase}');
   }
@@ -52,7 +50,7 @@ class GeneralService {
   Future<Map<String, dynamic>> addItem(
       String route, Map<String, dynamic> data) async {
     final response = await http.post(
-      Uri.parse(baseUrl + route),
+      Uri.parse(ApiConfig.baseUrl + route),
       headers: _headers,
       body: jsonEncode(data),
     );
@@ -66,7 +64,7 @@ class GeneralService {
   Future<Map<String, dynamic>> editItem(
       String route, String id, Map<String, dynamic> data) async {
     final response = await http.put(
-      Uri.parse('$baseUrl$route/$id'),
+      Uri.parse('${ApiConfig.baseUrl}$route/$id'),
       headers: _headers,
       body: jsonEncode(data),
     );
@@ -77,7 +75,7 @@ class GeneralService {
   // ───────────────── Delete item
   Future<void> deleteItem(String route, String id) async {
     final response = await http.delete(
-      Uri.parse('$baseUrl$route/$id'),
+      Uri.parse('${ApiConfig.baseUrl}$route/$id'),
       headers: _headers,
     );
     if (response.statusCode != 200) {

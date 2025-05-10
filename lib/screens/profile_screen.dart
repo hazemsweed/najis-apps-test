@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:najih_education_app/constants/api_config.dart';
+import 'package:najih_education_app/services/auth_state.dart';
+import 'package:provider/provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String lang;
@@ -13,6 +16,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   bool isEditing = false;
   bool isLoading = true;
+  late String _token;
   Map<String, dynamic>? userData;
 
   // Controllers for editable fields
@@ -27,13 +31,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    final auth = Provider.of<AuthState>(context, listen: false);
+    _token = auth.token!;
     fetchUserData();
   }
 
   Future<void> fetchUserData() async {
     final response = await http.get(
-      Uri.parse('http://localhost:1022/usersRouter/getuser/profile'),
-      headers: {'Content-Type': 'application/json'},
+      Uri.parse('${ApiConfig.baseUrl}/usersRouter/getuser/profile'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_token',
+      },
     );
 
     if (response.statusCode == 200) {
@@ -50,8 +59,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       setState(() => isLoading = false);
     } else {
-      // Handle error
-      print('Failed to load profile');
+      print('Failed to load profile - ${response.statusCode}');
     }
   }
 
@@ -69,8 +77,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     };
 
     final response = await http.put(
-      Uri.parse('http://localhost:1022/usersRouter/getuser/profile'),
-      headers: {'Content-Type': 'application/json'},
+      Uri.parse('${ApiConfig.baseUrl}/usersRouter/getuser/profile'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_token',
+      },
       body: jsonEncode(updatedData),
     );
 

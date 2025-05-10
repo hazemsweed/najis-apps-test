@@ -2,17 +2,16 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:najih_education_app/constants/api_config.dart';
 import 'package:provider/provider.dart';
 import 'auth_state.dart';
 
 class AuthService {
   final _storage = const FlutterSecureStorage();
-  // final String _baseUrl = "http://localhost:1022/users";
-  final String _baseUrl = "https://nserver.najih1.com/users";
 
   Future<Map<String, dynamic>> login(
       BuildContext context, String username, String password) async {
-    final url = Uri.parse("$_baseUrl/login");
+    final url = Uri.parse("${ApiConfig.baseUrl}/login");
     final res = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -40,7 +39,7 @@ class AuthService {
   }
 
   Future<bool> checkToken(BuildContext context, String token) async {
-    final url = Uri.parse("$_baseUrl/check/JWT");
+    final url = Uri.parse("${ApiConfig.baseUrl}/check/JWT");
     final res = await http.get(url, headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
@@ -63,7 +62,7 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> register(Map<String, dynamic> user) async {
-    final url = Uri.parse("$_baseUrl/signup");
+    final url = Uri.parse("${ApiConfig.baseUrl}/signup");
     final res = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
