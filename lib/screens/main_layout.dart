@@ -41,34 +41,46 @@ class _MainLayoutState extends State<MainLayout> {
     ];
 
     return Scaffold(
+      // ---------- APP BAR ----------
       appBar: AppBar(
+        elevation: 2,
+        backgroundColor: const Color(0xff143290),
         leading: _customPageBuilder != null
             ? IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
                 onPressed: _goBackToMain,
               )
             : null,
-        title: Text(_lang == 'en' ? "Najih Education" : "منصة ناجح التعليمية"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.language),
-            onPressed: _toggleLanguage,
-            tooltip: _lang == 'en' ? 'عربي' : 'English',
+        title: Text(
+          _lang == 'en' ? "Najih Education" : "منصة ناجح التعليمية",
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
+        ),
+        actions: [
+          // language
+          IconButton(
+            icon: const Icon(Icons.language, color: Colors.white),
+            tooltip: _lang == 'en' ? 'عربي' : 'English',
+            onPressed: _toggleLanguage,
+          ),
+          // auth
           if (loggedIn)
             IconButton(
-              icon: const Icon(Icons.logout),
+              icon: const Icon(Icons.logout, color: Colors.white),
               tooltip: _lang == 'en' ? "Logout" : "تسجيل الخروج",
               onPressed: () async => await AuthService().logout(context),
             )
           else
             IconButton(
-              icon: const Icon(Icons.login),
+              icon: const Icon(Icons.login, color: Colors.white),
               tooltip: _lang == 'en' ? "Login" : "تسجيل الدخول",
               onPressed: () => Navigator.pushNamed(context, '/login'),
             ),
         ],
       ),
+
       body: Column(
         children: [
           if (loggedIn)

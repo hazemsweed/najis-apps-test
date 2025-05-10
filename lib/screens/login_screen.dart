@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:najih_education_app/screens/main_layout.dart';
 import 'package:najih_education_app/screens/register_screen.dart';
 import 'package:najih_education_app/services/auth_service.dart';
 
@@ -27,7 +28,10 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => loading = false);
 
     if (res['success']) {
-      Navigator.pop(context); // go back to MainLayout
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MainLayout()),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(res['message'] ?? 'Login failed')),

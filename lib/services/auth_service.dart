@@ -11,7 +11,7 @@ class AuthService {
 
   Future<Map<String, dynamic>> login(
       BuildContext context, String username, String password) async {
-    final url = Uri.parse("${ApiConfig.baseUrl}/login");
+    final url = Uri.parse("${ApiConfig.baseUrl}users/login");
     final res = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -39,7 +39,7 @@ class AuthService {
   }
 
   Future<bool> checkToken(BuildContext context, String token) async {
-    final url = Uri.parse("${ApiConfig.baseUrl}/check/JWT");
+    final url = Uri.parse("${ApiConfig.baseUrl}users/check/JWT");
     final res = await http.get(url, headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
@@ -62,7 +62,7 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> register(Map<String, dynamic> user) async {
-    final url = Uri.parse("${ApiConfig.baseUrl}/signup");
+    final url = Uri.parse("${ApiConfig.baseUrl}users/signup");
     final res = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
