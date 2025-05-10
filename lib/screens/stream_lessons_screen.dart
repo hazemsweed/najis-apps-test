@@ -7,6 +7,8 @@ import 'package:najih_education_app/services/general_service.dart';
 import 'package:najih_education_app/dialogs/bill_uploader_dialog.dart';
 import 'package:provider/provider.dart';
 
+typedef PageBuilder = Widget Function(String lang);
+
 class StreamLessonsScreen extends StatefulWidget {
   final String subjectId;
   final String teacherId;
@@ -30,7 +32,7 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
   bool purchaseLoading = false; // ⬅ button spinner
   bool purchaseDone = false; // ⬅ disable after success
 
-  late String _lang = widget.lang;
+  //late String widget.lang = widget.lang;
   Map<String, dynamic>? item; // {subject, teacher, lessons}
   List<String> selected = [];
   bool enrollEnabled = true;
@@ -57,19 +59,6 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
     }
   }
 
-  // ────────── pick bill helper ──────────
-  Future<File?> _pickBillDialog() async {
-    File? picked;
-    await showDialog(
-      context: context,
-      builder: (_) => _UploadBillDialog(
-        onPicked: (f) => picked = f,
-        lang: _lang,
-      ),
-    );
-    return picked;
-  }
-
   // ────────── purchase flow ──────────
   Future<void> _purchase() async {
     if (purchaseLoading || purchaseDone) return;
@@ -86,7 +75,7 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
 
     final Map<String, dynamic>? billJson = await showDialog(
       context: context,
-      builder: (_) => BillUploaderDialog(lang: _lang),
+      builder: (_) => BillUploaderDialog(lang: widget.lang),
     );
     if (billJson == null) return;
 
@@ -94,7 +83,6 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
 
     try {
       final subj = item!['subject'];
-      final teacher = item!['teacher'];
 
       final payload = {
         "source": "teachersLessonsIds",
@@ -132,7 +120,8 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(_lang == 'en' ? 'Upload failed' : 'فشل الرفع')),
+              content:
+                  Text(widget.lang == 'en' ? 'Upload failed' : 'فشل الرفع')),
         );
       }
     } finally {
@@ -164,8 +153,8 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
     }
     if (item == null) {
       return Scaffold(
-        body:
-            Center(child: Text(_lang == 'en' ? 'Error' : 'حدث خطأ في التحميل')),
+        body: Center(
+            child: Text(widget.lang == 'en' ? 'Error' : 'حدث خطأ في التحميل')),
       );
     }
 
@@ -175,132 +164,323 @@ class _StreamLessonsScreenState extends State<StreamLessonsScreen> {
 
     return Scaffold(
       body: Directionality(
-        textDirection: _lang == 'ar' ? TextDirection.rtl : TextDirection.ltr,
+        textDirection:
+            widget.lang == 'ar' ? TextDirection.rtl : TextDirection.ltr,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
           child: Column(
             children: [
               // header
-              Text(subj['name'][_lang] ?? '',
+              Text(subj['name'][widget.lang] ?? '',
                   style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Color(0xff143290))),
               const SizedBox(height: 4),
-              Text("${subj['level'][_lang]}  ${subj['class']}",
+              Text("${subj['level'][widget.lang]}  ${subj['class']}",
                   style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Color(0xfff4bc43))),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xff143290), Color(0xfff4bc43)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.person,
+                          color: Color(0xff143290), size: 28),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            teacher['name'],
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const Icon(Icons.cake,
+                                  size: 16, color: Colors.white70),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${widget.lang == 'en' ? 'Age' : 'العمر'}: ${teacher['age']}',
+                                style: const TextStyle(color: Colors.white70),
+                              ),
+                              const SizedBox(width: 16),
+                              const Icon(Icons.school,
+                                  size: 16, color: Colors.white70),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${widget.lang == 'en' ? 'Exp' : 'خبرة'}: ${teacher['experience']}',
+                                style: const TextStyle(color: Colors.white70),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xfff4bc43), Color(0xff143290)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.lang == 'en' ? 'Subject Details' : 'تفاصيل المادة',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _iconRow(
+                        Icons.date_range,
+                        widget.lang == 'en' ? 'Start Date' : 'تاريخ البدء',
+                        subj['startDate']),
+                    _iconRow(
+                        Icons.event,
+                        widget.lang == 'en' ? 'End Date' : 'تاريخ الانتهاء',
+                        subj['endDate']),
+                    _iconRow(
+                        Icons.menu_book,
+                        widget.lang == 'en' ? 'Lesson Count' : 'عدد الدروس',
+                        subj['lessonCount'].toString()),
+                    _iconRow(
+                      Icons.monetization_on_outlined,
+                      widget.lang == 'en' ? 'Price per lesson' : 'سعر الدرس',
+                      '${subj['lessonPrice']} ${widget.lang == 'en' ? 'EGP' : 'جنيه'}',
+                    ),
+                    _iconRow(
+                        Icons.event_seat,
+                        widget.lang == 'en'
+                            ? 'Available Seats'
+                            : 'المقاعد المتاحة',
+                        subj['availableSeats'].toString()),
+                    _iconRow(
+                        Icons.chair_alt,
+                        widget.lang == 'en'
+                            ? 'Remaining Seats'
+                            : 'المقاعد المتبقية',
+                        subj['remainingSeats'].toString()),
+                    _iconRow(
+                        Icons.payment,
+                        widget.lang == 'en' ? 'Payment Method' : 'طريقة الدفع',
+                        subj['paymentMethod']),
+                  ],
+                ),
+              ),
               const SizedBox(height: 24),
 
               // teacher card
-              Card(
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: const Color(0xfff4bc43),
-                    child: const Icon(Icons.person, color: Colors.white),
-                  ),
-                  title: Text(teacher['name']),
-                  subtitle: Text(
-                      "${_lang == 'en' ? 'Age' : 'العمر'}: ${teacher['age']}  "
-                      "${_lang == 'en' ? 'Exp' : 'خبرة'}: ${teacher['experience']}"),
-                ),
-              ),
-              const SizedBox(height: 24),
 
-              // price & buttons
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                          "${_lang == 'en' ? 'Price per lesson' : 'سعر الدرس'}: "
-                          "${subj['lessonPrice']} EGP",
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(vertical: 16),
+                child: enrollEnabled
+                    ? ElevatedButton.icon(
+                        icon: const Icon(Icons.check_circle_outline,
+                            color: Colors.white),
+                        onPressed: () => setState(() => enrollEnabled = false),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xff143290),
+                          foregroundColor:
+                              Colors.white, // 👈 makes text/icon white
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          elevation: 4,
+                        ),
+                        label: Text(
+                          widget.lang == 'en' ? 'Enroll Now' : 'سجل الآن',
                           style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 18)),
-                      const SizedBox(height: 12),
-                      enrollEnabled
-                          ? ElevatedButton(
-                              onPressed: () =>
-                                  setState(() => enrollEnabled = false),
-                              child: Text(
-                                  _lang == 'en' ? 'Enroll now' : 'سجل الآن'),
-                            )
-                          : ElevatedButton(
-                              onPressed: selected.isNotEmpty ? _purchase : null,
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xff588157)),
-                              child: purchaseLoading
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2, color: Colors.white),
-                                    )
-                                  : Text(_lang == 'en'
-                                      ? (purchaseDone
-                                          ? 'Done'
-                                          : 'Purchase selected')
-                                      : (purchaseDone
-                                          ? 'تم الإرسال'
-                                          : 'اشتر الدروس')),
-                            ),
-                    ],
-                  ),
-                ),
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      )
+                    : ElevatedButton.icon(
+                        icon: const Icon(Icons.shopping_cart_checkout,
+                            color: Colors.white),
+                        onPressed: selected.isNotEmpty ? _purchase : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xff588157),
+                          foregroundColor:
+                              Colors.white, // 👈 makes text/icon white
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          elevation: 4,
+                          disabledBackgroundColor: Colors.grey.shade400,
+                        ),
+                        label: purchaseLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                widget.lang == 'en'
+                                    ? (purchaseDone
+                                        ? 'Done'
+                                        : 'Purchase Selected')
+                                    : (purchaseDone
+                                        ? 'تم الإرسال'
+                                        : 'اشتر الدروس'),
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                      ),
               ),
+
               const SizedBox(height: 24),
 
               // lessons list
               ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: lessons.length,
-                itemBuilder: (_, idx) {
-                  final l = lessons[idx];
-                  final sel = selected.contains(l['_id']);
-                  return GestureDetector(
-                    onTap: () {
-                      if (!enrollEnabled && !purchaseDone) toggle(l['_id']);
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color:
-                            sel ? Colors.green.shade200 : Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(l['name'][_lang] ?? '',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16)),
-                              ),
-                              Text("${l['startDate']} – ${l['endDate']}",
-                                  style: const TextStyle(fontSize: 12)),
-                            ],
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: lessons.length,
+                  itemBuilder: (_, idx) {
+                    final l = lessons[idx];
+                    final sel = selected.contains(l['_id']);
+
+                    return GestureDetector(
+                      onTap: () {
+                        if (!enrollEnabled && !purchaseDone) toggle(l['_id']);
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: sel
+                              ? Colors.green.shade100
+                              : const Color(0xffF8F9FA),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 6,
+                              offset: Offset(0, 3),
+                            ),
+                          ],
+                          border: Border.all(
+                            color: sel
+                                ? const Color(0xff588157)
+                                : Colors.grey.shade300,
+                            width: 1,
                           ),
-                          const SizedBox(height: 6),
-                          Text(l['description'][_lang] ?? ''),
-                        ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Lesson Title
+                            Text(
+                              l['name'][widget.lang] ?? '',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xff143290),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Date Range
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.calendar_today,
+                                    size: 16, color: Colors.grey),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '${l['startDate']} – ${l['endDate']}',
+                                    style: const TextStyle(fontSize: 13),
+                                    overflow: TextOverflow
+                                        .ellipsis, // prevents overflow
+                                    maxLines: 2,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 8),
+
+                            // Description
+                            Text(
+                              l['description'][widget.lang] ?? '',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
+                    );
+                  }),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _iconRow(IconData icon, String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '$title: $value',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

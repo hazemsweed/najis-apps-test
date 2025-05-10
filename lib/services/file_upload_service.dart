@@ -3,7 +3,8 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 
 class FileUploadService {
-  static const String _defaultBase = 'http://localhost:1022/';
+  // static const String _defaultBase = 'http://localhost:1022/';
+  static const String _defaultBase = 'https://nserver.najih1.com/';
 
   final Dio _dio;
 

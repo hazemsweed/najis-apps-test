@@ -4,6 +4,7 @@ import 'package:najih_education_app/screens/my_lessons_screen.dart';
 import 'package:najih_education_app/services/auth_state.dart';
 import 'package:najih_education_app/services/auth_service.dart';
 import '../widgets/home_page_content.dart';
+import 'package:najih_education_app/screens/profile_screen.dart';
 
 typedef PageBuilder = Widget Function(String lang);
 
@@ -36,9 +37,7 @@ class _MainLayoutState extends State<MainLayout> {
       loggedIn
           ? const Center(child: Text("My Exams"))
           : _requireLogin("My Exams"),
-      loggedIn
-          ? const Center(child: Text("Profile"))
-          : _requireLogin("Profile"),
+      loggedIn ? ProfileScreen(lang: _lang) : _requireLogin("Profile"),
     ];
 
     return Scaffold(

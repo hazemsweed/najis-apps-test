@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'auth_state.dart';
 
 class GeneralService {
+  // static const String baseUrl = 'http://localhost:1022/';
   static const String baseUrl = 'https://nserver.najih1.com/';
 
   static late BuildContext globalContext;
