@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:najih_education_app/screens/recorded_lessons_screen.dart';
-import 'package:najih_education_app/services/general_service.dart';
 import 'package:najih_education_app/screens/stream_teachers_screen.dart';
+import 'package:najih_education_app/services/general_service.dart';
 
 typedef PageBuilder = Widget Function(String lang);
 
@@ -65,8 +65,8 @@ class _KindergartenScreenState extends State<KindergartenScreen> {
 
   String getPageType() {
     return widget.lessonType.toLowerCase() == "recorded"
-        ? (widget.lang == 'en' ? "Recorded" : "مسجلة")
-        : (widget.lang == 'en' ? "Stream" : "مباشرة");
+        ? (widget.lang == 'en' ? "Recorded Lessons" : "الدروس المسجلة")
+        : (widget.lang == 'en' ? "Stream Lessons" : "الدروس المباشرة");
   }
 
   @override
@@ -78,83 +78,117 @@ class _KindergartenScreenState extends State<KindergartenScreen> {
           : Directionality(
               textDirection:
                   widget.lang == 'ar' ? TextDirection.rtl : TextDirection.ltr,
-              child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                child: Column(
-                  children: [
-                    Center(
+              child: Column(
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
-                        children: [
-                          Text(
-                            widget.lang == 'en'
-                                ? "Kindergarten"
-                                : "رياض الأطفال",
-                            style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xff143290)),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(getPageType(),
-                              style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xfff4bc43))),
-                        ],
+                        children: classes.map(_buildClassCard).toList(),
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    ...classes.map(_buildClassCard),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xff143290), Color(0xff4e58b4)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            widget.lang == 'en' ? "Kindergarten" : "رياض الأطفال",
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            getPageType(),
+            style: const TextStyle(
+              color: Color(0xfff4bc43),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildClassCard(ClassGroup group) {
     return Card(
       margin: const EdgeInsets.only(bottom: 20),
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      elevation: 5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Column(
         children: [
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                  colors: [Color(0xff143290), Color(0xfff4bc43)]),
+                colors: [Color(0xff143290), Color(0xfff4bc43)],
+              ),
               borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(15), topRight: Radius.circular(15)),
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
             ),
-            child: Center(
-              child: Text(group.title[widget.lang] ?? "",
-                  style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(
+              group.title[widget.lang] ?? "",
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
           ),
-          ...group.items.map((subject) => ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xfff4bc43),
-                  child: Icon(Icons.play_circle_fill, color: Colors.white),
-                ),
-                title: Text(subject["name"][widget.lang] ?? "",
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                onTap: () {
-                  widget.openPage(
-                    (l) => widget.lessonType.toLowerCase() == 'recorded'
-                        ? RecordedLessonsScreen(
-                            subjectId: subject["_id"], lang: l)
-                        : StreamTeachersScreen(
-                            subjectId: subject["_id"],
-                            lang: l,
-                            openPage: widget.openPage,
-                          ),
-                  );
-                },
-              )),
+          ...group.items.map((subject) {
+            return ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: Color(0xfff4bc43),
+                child: Icon(Icons.play_circle_fill, color: Colors.white),
+              ),
+              title: Text(
+                subject["name"][widget.lang] ?? "",
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              onTap: () {
+                widget.openPage(
+                  (l) => widget.lessonType.toLowerCase() == 'recorded'
+                      ? RecordedLessonsScreen(
+                          subjectId: subject["_id"], lang: l)
+                      : StreamTeachersScreen(
+                          subjectId: subject["_id"],
+                          lang: l,
+                          openPage: widget.openPage,
+                        ),
+                );
+              },
+            );
+          }),
         ],
       ),
     );

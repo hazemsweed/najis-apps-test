@@ -60,6 +60,18 @@ class GeneralService {
     throw Exception('Failed to add item: ${response.reasonPhrase}');
   }
 
+  Future<dynamic> addItemLessons(String route, dynamic data) async {
+    final response = await http.post(
+      Uri.parse(ApiConfig.baseUrl + route),
+      headers: _headers,
+      body: jsonEncode(data),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(response.body);
+    }
+    throw Exception('Failed to add item: ${response.reasonPhrase}');
+  }
+
   // ───────────────── Edit item
   Future<Map<String, dynamic>> editItem(
       String route, String id, Map<String, dynamic> data) async {

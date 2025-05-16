@@ -3,6 +3,7 @@ import 'package:najih_education_app/screens/HighSchoolScreen.dart';
 import 'package:najih_education_app/screens/KindergartenScreen.dart';
 import 'package:najih_education_app/screens/MiddleSchoolScreen.dart';
 import 'package:najih_education_app/screens/PrimarySchoolScreen.dart';
+import 'package:najih_education_app/screens/exams_screen.dart';
 
 typedef PageBuilder = Widget Function(String lang);
 
@@ -191,16 +192,10 @@ class HomePageContent extends StatelessWidget {
   }
 
   void _handleTap(BuildContext context, String title) {
-    if ([
-      'High School',
-      'Middle School',
-      'Primary School',
-      'Kindergarten',
-      'المدرسة الثانوية',
-      'المدرسة الاعدادية',
-      'المدرسة الابتدائية',
-      'رياض الاطفال',
-    ].contains(title)) {
+    if (title == 'Exams' || title == 'الامتحانات') {
+      openPage((l) => ExamsScreen(lang: l, openPage: openPage));
+      // ✅ Navigate to exams
+    } else {
       _showLessonTypeDialog(context, title);
     }
   }

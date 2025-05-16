@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:najih_education_app/screens/MyExamsScreen.dart';
 import 'package:provider/provider.dart';
 import 'package:najih_education_app/screens/my_lessons_screen.dart';
 import 'package:najih_education_app/services/auth_state.dart';
@@ -34,9 +35,7 @@ class _MainLayoutState extends State<MainLayout> {
     final pages = [
       HomePageContent(lang: _lang, openPage: _openCustomPage),
       loggedIn ? MyLessonsScreen(lang: _lang) : _requireLogin("My Lessons"),
-      loggedIn
-          ? const Center(child: Text("My Exams"))
-          : _requireLogin("My Exams"),
+      loggedIn ? MyExamsScreen(lang: _lang) : _requireLogin("My Exams"),
       loggedIn ? ProfileScreen(lang: _lang) : _requireLogin("Profile"),
     ];
 

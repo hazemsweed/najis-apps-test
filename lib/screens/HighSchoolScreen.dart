@@ -103,128 +103,98 @@ class _HighSchoolScreenState extends State<HighSchoolScreen> {
   }
 
   Widget _buildHeader() {
-    return TweenAnimationBuilder(
-      duration: const Duration(milliseconds: 800),
-      tween: Tween<double>(begin: 0, end: 1),
-      builder: (context, value, child) {
-        return Transform.translate(
-          offset: Offset(0, (1 - value) * 60),
-          child: Opacity(opacity: value, child: child),
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xff143290), Color(0xff4e58b4)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(32),
-            bottomRight: Radius.circular(32),
-          ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xff143290), Color(0xff4e58b4)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: Column(
-          children: [
-            Text(
-              widget.lang == 'en' ? "High School" : "المدرسة الثانوية",
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              getPageType(),
-              style: const TextStyle(
-                color: Color(0xfff4bc43),
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
         ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            widget.lang == 'en' ? "High School" : "المدرسة الثانوية",
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            getPageType(),
+            style: const TextStyle(
+              color: Color(0xfff4bc43),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildClassCard(ClassGroup group) {
-    return TweenAnimationBuilder(
-      duration: const Duration(milliseconds: 500),
-      tween: Tween<double>(begin: 0, end: 1),
-      builder: (context, value, child) {
-        return Opacity(opacity: value.clamp(0.0, 1.0), child: child);
-      },
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 20),
-        elevation: 5,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xff143290), Color(0xfff4bc43)],
-                ),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
+    return Card(
+      margin: const EdgeInsets.only(bottom: 20),
+      elevation: 5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xff143290), Color(0xfff4bc43)],
               ),
-              child: Text(
-                group.title[widget.lang] ?? "",
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
             ),
-            ...group.items.asMap().entries.map((entry) {
-              final i = entry.key;
-              final subject = entry.value;
-              return TweenAnimationBuilder(
-                duration: Duration(milliseconds: 400 + (i * 100)),
-                tween: Tween<double>(begin: 0, end: 1),
-                builder: (context, value, child) {
-                  final safeValue = value.clamp(0.0, 1.0);
-                  return Transform.scale(
-                    scale: safeValue,
-                    child: Opacity(opacity: safeValue, child: child),
-                  );
-                },
-                child: ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: Color(0xfff4bc43),
-                    child: Icon(Icons.play_circle_fill, color: Colors.white),
-                  ),
-                  title: Text(
-                    subject["name"][widget.lang] ?? "",
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  onTap: () {
-                    widget.openPage(
-                      (l) => widget.lessonType.toLowerCase() == 'recorded'
-                          ? RecordedLessonsScreen(
-                              subjectId: subject["_id"], lang: l)
-                          : StreamTeachersScreen(
-                              subjectId: subject["_id"],
-                              lang: l,
-                              openPage: widget.openPage,
-                            ),
-                    );
-                  },
-                ),
-              );
-            }),
-          ],
-        ),
+            child: Text(
+              group.title[widget.lang] ?? "",
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16),
+            ),
+          ),
+          ...group.items.map((subject) {
+            return ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: Color(0xfff4bc43),
+                child: Icon(Icons.play_circle_fill, color: Colors.white),
+              ),
+              title: Text(
+                subject["name"][widget.lang] ?? "",
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              onTap: () {
+                widget.openPage(
+                  (l) => widget.lessonType.toLowerCase() == 'recorded'
+                      ? RecordedLessonsScreen(
+                          subjectId: subject["_id"], lang: l)
+                      : StreamTeachersScreen(
+                          subjectId: subject["_id"],
+                          lang: l,
+                          openPage: widget.openPage,
+                        ),
+                );
+              },
+            );
+          }),
+        ],
       ),
     );
   }
